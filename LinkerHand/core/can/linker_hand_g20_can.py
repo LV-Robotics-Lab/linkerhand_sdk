@@ -211,13 +211,41 @@ class LinkerHandG20Can:
             0: 0, 16: 1, 32: 2, 48: 3, 64: 4, 80: 5,
             96: 6, 112: 7, 128: 8, 144: 9, 160: 10, 176: 11,
         }
-        
+        # 全掌触觉数据缓存
+        self.thumb_matrix_palm = np.full((23, 9), -1)
+        self.thumb_matrix_palm_tmp = []
+        self.thumb_matrix_palm_mass = [-1, -1, -1]
+
+        self.index_matrix_palm = np.full((23, 9), -1)
+        self.index_matrix_palm_tmp = []
+        self.index_matrix_palm_mass = [-1, -1, -1]
+
+        self.middle_matrix_palm = np.full((23, 9), -1)
+        self.middle_matrix_palm_tmp = []
+        self.middle_matrix_palm_mass = [-1, -1, -1]
+
+        self.ring_matrix_palm = np.full((23, 9), -1)
+        self.ring_matrix_palm_tmp = []
+        self.ring_matrix_palm_mass = [-1, -1, -1]
+
+        self.little_matrix_palm = np.full((23, 9), -1)
+        self.little_matrix_palm_tmp = []
+        self.little_matrix_palm_mass = [-1, -1, -1]
+
+        self.palm_matrix_palm = np.full((28, 20), -1)
+        self.palm_matrix_palm_tmp = []
+        self.palm_matrix_palm_mass = [-1, -1]
+
         self.bus = self.init_can_bus(channel=self.can_channel, baudrate=baudrate)
         # 启动接收线程
         self.receive_thread = threading.Thread(target=self.receive_response)
         self.receive_thread.daemon = True
         self.receive_thread.start()
         self._check_touch_type()
+        try:
+            self.xB0 = self.get_touch_sensor_type() # 获取触觉传感器类型,如果返回值为5：TSSP_JZG(全手掌，指尖11x9,指中6x9,指根6x9,数据以23行9列形式返回，五指各有3个合力值。手掌20x28，手掌有两个合力值，分为上掌上半部分和下半部分。)
+        except Exception as e:
+            print(f"未识别触觉传感器类型: {e}，重新拔插USB设备后重试")
 
     def _check_touch_type(self):
         '''根据SN编码判断压感类型'''
@@ -405,49 +433,107 @@ class LinkerHandG20Can:
             elif frame_type == 0x9C: self.x9C = list(response_data)
             
             # 触觉传感器响应
-            elif frame_type == 0xB0: self.xB0 = list(response_data)
+            elif frame_type == 0xB0:
+                self.xB0 = list(response_data)
             elif frame_type == 0xB1:
                 d = list(response_data)
-                if len(d) == 2:
-                    self.xB1 = d
-                elif len(d) == 7:
-                    index = self.matrix_map.get(d[0])
-                    if index is not None:
-                        self.thumb_matrix[index] = d[1:]
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.thumb_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 4 and d[0] == 22 and d[1] == 7: # 如果是最后一帧
+                        self.thumb_matrix_palm = self.build_matrix(self.thumb_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.thumb_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 7 and d[0] == 255:
+                        self.thumb_matrix_palm_mass = self.build_matrix_mass(d) # [指尖合力值, 指中合力值, 指根合力值]
+                else:
+                    if len(d) == 2:
+                        self.xB1 = d
+                    elif len(d) == 7:
+                        index = self.matrix_map.get(d[0])
+                        if index is not None:
+                            self.thumb_matrix[index] = d[1:]
                         
             elif frame_type == 0xB2: 
                 d = list(response_data)
-                if len(d) == 2:
-                    self.xB2 = d
-                elif len(d) == 7:
-                    index = self.matrix_map.get(d[0])
-                    if index is not None:
-                        self.index_matrix[index] = d[1:]
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.index_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 4 and d[0] == 22 and d[1] == 7: # 如果是最后一帧
+                        self.index_matrix_palm = self.build_matrix(self.index_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.index_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 7 and d[0] == 255:
+                        self.index_matrix_palm_mass = self.build_matrix_mass(d) # [指尖合力值, 指中合力值, 指根合力值]
+                else:
+                    if len(d) == 2:
+                        self.xB2 = d
+                    elif len(d) == 7:
+                        index = self.matrix_map.get(d[0])
+                        if index is not None:
+                            self.index_matrix[index] = d[1:]
             elif frame_type == 0xB3: 
                 d = list(response_data)
-                if len(d) == 2:
-                    self.xB3 = d
-                elif len(d) == 7:
-                    index = self.matrix_map.get(d[0])
-                    if index is not None:
-                        self.middle_matrix[index] = d[1:]
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.middle_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 4 and d[0] == 22 and d[1] == 7: # 如果是最后一帧
+                        self.middle_matrix_palm = self.build_matrix(self.middle_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.middle_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 7 and d[0] == 255:
+                        self.middle_matrix_palm_mass = self.build_matrix_mass(d) # [指尖合力值, 指中合力值, 指根合力值]
+                else:
+                    if len(d) == 2:
+                        self.xB3 = d
+                    elif len(d) == 7:
+                        index = self.matrix_map.get(d[0])
+                        if index is not None:
+                            self.middle_matrix[index] = d[1:]
             elif frame_type == 0xB4: 
                 d = list(response_data)
-                if len(d) == 2:
-                    self.xB4 = d
-                elif len(d) == 7:
-                    index = self.matrix_map.get(d[0])
-                    if index is not None:
-                        self.ring_matrix[index] = d[1:]
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.ring_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 4 and d[0] == 22 and d[1] == 7: # 如果是最后一帧
+                        self.ring_matrix_palm = self.build_matrix(self.ring_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.ring_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 7 and d[0] == 255:
+                        self.ring_matrix_palm_mass = self.build_matrix_mass(d) # [指尖合力值, 指中合力值, 指根合力值]
+                else:
+                    if len(d) == 2:
+                        self.xB4 = d
+                    elif len(d) == 7:
+                        index = self.matrix_map.get(d[0])
+                        if index is not None:
+                            self.ring_matrix[index] = d[1:]
             elif frame_type == 0xB5: 
                 d = list(response_data)
-                if len(d) == 2:
-                    self.xB5 = d
-                elif len(d) == 7:
-                    index = self.matrix_map.get(d[0])
-                    if index is not None:
-                        self.little_matrix[index] = d[1:]
-            elif frame_type == 0xB6: self.xB6 = list(response_data)
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.little_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 4 and d[0] == 22 and d[1] == 7: # 如果是最后一帧
+                        self.little_matrix_palm = self.build_matrix(self.little_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.little_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 7 and d[0] == 255:
+                        self.little_matrix_palm_mass = self.build_matrix_mass(d) # [指尖合力值, 指中合力值, 指根合力值]
+                else:
+                    if len(d) == 2:
+                        self.xB5 = d
+                    elif len(d) == 7:
+                        index = self.matrix_map.get(d[0])
+                        if index is not None:
+                            self.little_matrix[index] = d[1:]
+            elif frame_type == 0xB6:
+                d = list(response_data)
+                if self.xB0[0] == 5:
+                    """全掌矩阵"""
+                    self.palm_matrix_palm_tmp.append(d) # 将返回帧存储到缓存
+                    if len(d) == 7 and d[0] == 27 and d[1] == 5: # 如果是最后一帧
+                        self.palm_matrix_palm = self.build_matrix(self.palm_matrix_palm_tmp) # 将帧数据排列成23行9列矩阵
+                        self.palm_matrix_palm_tmp=[] # 重置缓存数据
+                    if len(d) == 5 and d[0] == 255:
+                        self.palm_matrix_palm_mass = self.build_matrix_mass(d)
+                else:
+                    self.xB6 = d
+
             
             # 查询指令响应
             # elif frame_type == 0xC0: self.xC0 = list(response_data)
@@ -462,6 +548,81 @@ class LinkerHandG20Can:
             elif frame_type == 0xC2: self.xC2 = list(response_data)
             elif frame_type == 0xC3: self.xC3 = list(response_data)
             elif frame_type == 0xC4: self.xC4 = list(response_data)
+
+
+    
+    def build_matrix(self, data, r=23, c=9):
+        rows, cols = r, c
+        matrix = np.full((rows, cols), -1)
+        
+        for item in data:
+            if len(item) == 4:
+                # 最后一行：从列坐标开始放
+                row, col, v1, v2 = item
+                start_col = col  # 改为 col，而不是 col+1
+                values = [v1, v2]
+                
+                cur_row, cur_col = row, start_col
+                for val in values:
+                    if cur_col >= cols:
+                        cur_row += 1
+                        cur_col = 0
+                    if cur_row < rows:
+                        matrix[cur_row][cur_col] = val
+                        cur_col += 1
+                break
+            
+            elif len(item) == 7:
+                # 普通行：从列坐标开始放
+                row, col, v1, v2, v3, v4, v5 = item
+                start_col = col  # 改为 col，而不是 col+1
+                values = [v1, v2, v3, v4, v5]
+                
+                cur_row, cur_col = row, start_col
+                for val in values:
+                    if cur_col >= cols:
+                        cur_row += 1
+                        cur_col = 0
+                    if cur_row < rows:
+                        matrix[cur_row][cur_col] = val
+                        cur_col += 1
+        
+        return matrix
+    
+    def build_matrix_mass(self, hex_data):
+        """
+        处理返回的和力值的帧数据,手指返回合力值长度为3，[指尖，指中，指根]
+        手掌返回为长度为2。[上半部,下半部]
+        解析 CAN 数据（支持 5 字节或 7 字节）
+        
+        参数:
+            hex_data: 十六进制列表，如 [0xFF, 0x27, 0x02, 0x51, 0x05, 0x20, 0x04] (7字节)
+                    或 [0xFF, 0x92, 0x09, 0xF8, 0x00] (5字节)
+        
+        返回:
+            (id, values) 其中 id 是 int，values 是包含 int 的列表（2个或3个）
+        """
+        if len(hex_data) not in [5, 7]:
+            raise ValueError(f"数据长度不支持，需要 5 或 7 字节，实际: {len(hex_data)}")
+        
+        # 获取 ID（第一个字节）
+        can_id = hex_data[0]
+        
+        # 计算有多少组数据（每组2字节）
+        data_bytes = hex_data[1:]  # 去掉 ID
+        num_values = len(data_bytes) // 2
+        
+        # 解析数据组（小端序）
+        values = []
+        for i in range(num_values):
+            low_byte = data_bytes[i*2]      # 低位字节
+            high_byte = data_bytes[i*2 + 1]  # 高位字节
+            # 小端拼接：低位 + 高位<<8
+            value = low_byte | (high_byte << 8)
+            values.append(value)
+        
+        return values
+
 
     # 并联控制指令方法
     def set_roll_positions(self, joint_ranges):
@@ -703,45 +864,85 @@ class LinkerHandG20Can:
         self.send_command(FrameProperty.HAND_TANGENTIAL_FORCE_DIR, [])
         return self.x92
     
-    def get_approach_sensing(self):
+    def get_approach_inc(self):
         """获取五指接近感应"""
         self.send_command(FrameProperty.HAND_APPROACH_INC, [])
         return self.x93
+    
+    def get_force(self):
+        '''Get pressure sensor data'''
+        return [self.x90,self.x91,self.x92,self.x93]
 
     # 触觉传感器方法
     def get_touch_sensor_type(self):
-        """获取触觉传感器类型"""
+        """获取触觉传感器类型 暂仅支持G20"""
         self.send_command(FrameProperty.TOUCH_SENSOR_TYPE, [])
-        return self.xB0
+        return self.xB0[0]
     
     def get_thumb_touch(self):
         """获取大拇指触觉传感数据"""
-        self.send_command(FrameProperty.THUMB_TOUCH, [0xC6], sleep_time=0.007)
+        if self.xB0[0] == 5:
+            d = [23, 9, 1]
+            sleep_time = 0.015
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.THUMB_TOUCH, d, sleep_time=sleep_time)
         #return self.thumb_matrix
     
     def get_index_touch(self):
         """获取食指触觉传感数据"""
-        self.send_command(FrameProperty.INDEX_TOUCH, [0xC6], sleep_time=0.007)
+        if self.xB0[0] == 5:
+            d = [23, 9, 1]
+            sleep_time = 0.015
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.INDEX_TOUCH, d, sleep_time=sleep_time)
         #return self.xB2
     
     def get_middle_touch(self):
         """获取中指触觉传感数据"""
-        self.send_command(FrameProperty.MIDDLE_TOUCH, [0xC6], sleep_time=0.007)
+        if self.xB0[0] == 5:
+            d = [23, 9, 1]
+            sleep_time = 0.015
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.MIDDLE_TOUCH, d, sleep_time=sleep_time)
         #33333return self.xB3
     
     def get_ring_touch(self):
         """获取无名指触觉传感数据"""
-        self.send_command(FrameProperty.RING_TOUCH, [0xC6], sleep_time=0.007)
+        if self.xB0[0] == 5:
+            d = [23, 9, 1]
+            sleep_time = 0.015
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.RING_TOUCH, d, sleep_time=sleep_time)
         #return self.xB4
     
     def get_little_touch(self):
         """获取小拇指触觉传感数据"""
-        self.send_command(FrameProperty.LITTLE_TOUCH, [0xC6], sleep_time=0.007)
+        if self.xB0[0] == 5:
+            d = [23, 9, 1]
+            sleep_time = 0.015
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.LITTLE_TOUCH, d, sleep_time=sleep_time)
         #return self.xB5
     
     def get_palm_touch(self):
         """获取手掌触觉传感数据"""
-        self.send_command(FrameProperty.PALM_TOUCH, [], sleep_time=0.015)
+        if self.xB0[0] == 5:
+            d = [28, 20, 1]
+            sleep_time = 0.035
+        else:
+            d = [0xC6]
+            sleep_time = 0.007
+        self.send_command(FrameProperty.PALM_TOUCH, d, sleep_time=sleep_time)
         #return self.xB6
 
     # 查询指令方法
@@ -829,7 +1030,7 @@ class LinkerHandG20Can:
         self.get_little_positions()
         time.sleep(0.002)
         s = [self.x41, self.x42, self.x43, self.x44, self.x45]
-        cmd_state = self.joint_state_to_cmd_state(list=s)
+        cmd_state = self.joint_state_to_cmd_state(state=s)
         return cmd_state
 
     def get_current_pub_status(self):
@@ -846,7 +1047,7 @@ class LinkerHandG20Can:
         time.sleep(0.002)
 
         joint_speed = [self.x49, self.x4A, self.x4B, self.x4C, self.x4D]
-        state_speed = self.joint_state_to_cmd_state(list=joint_speed)
+        state_speed = self.joint_state_to_cmd_state(state=joint_speed)
         return state_speed
 
     def get_touch_type(self):
@@ -883,38 +1084,67 @@ class LinkerHandG20Can:
     def get_thumb_matrix_touch(self,sleep_time=0):
         """API接口:获取[大拇指]指触摸传感器数据"""
         self.get_thumb_touch()
-        return self.thumb_matrix
+        if self.xB0[0] == 5:
+            data = self.thumb_matrix_palm
+        else:
+            data = self.thumb_matrix
+        return data
     
     def get_index_matrix_touch(self,sleep_time=0):
         """API接口:获取[食指]指触摸传感器数据"""
         self.get_index_touch()
-        return self.index_matrix
+        if self.xB0[0] == 5:
+            data = self.index_matrix_palm
+        else:
+            data = self.index_matrix
+        return data
     
     def get_middle_matrix_touch(self,sleep_time=0):
         """API接口:获取[中指]指触摸传感器数据"""
         self.get_middle_touch()
-        return self.middle_matrix
+        if self.xB0[0] == 5:
+            data = self.middle_matrix_palm
+        else:
+            data = self.middle_matrix
+        return data
     
     def get_ring_matrix_touch(self,sleep_time=0):
         """API接口:获取[无名指]指触摸传感器数据"""
         self.get_ring_touch()
-        return self.ring_matrix
+        if self.xB0[0] == 5:
+            data = self.ring_matrix_palm
+        else:
+            data = self.ring_matrix
+        return data
     
     def get_little_matrix_touch(self,sleep_time=0):
         """API接口:获取[小指]指触摸传感器数据"""
         self.get_little_touch()
-        return self.little_matrix
+        if self.xB0[0] == 5:
+            data = self.little_matrix_palm
+        else:
+            data = self.little_matrix
+        return data
+    
+    def get_palm_matrix_touch(self,sleep_time=0):
+        """API接口:获取[小指]指触摸传感器数据"""
+        self.get_palm_touch()
+        if self.xB0[0] == 5:
+            data = self.palm_matrix_palm
+        else:
+            data = self.palm_matrix
+        return data
 
     def get_torque(self):
         """API接口:获取手指最大扭矩"""
         self.get_thumb_torque()
         self.get_index_torque()
         self.get_middle_torque()
-        self.get_middle_torque()
+        self.get_ring_torque()
         self.get_little_torque()
         time.sleep(0.003)
         t = [self.x51, self.x52, self.x53, self.x54, self.x55]
-        cmd_torque = self.joint_state_to_cmd_state(list=t)
+        cmd_torque = self.joint_state_to_cmd_state(state=t)
         return cmd_torque
 
     def get_current(self):
@@ -924,19 +1154,19 @@ class LinkerHandG20Can:
     def get_temperature(self):
         """API接口:获取手指温度"""
         joint_temperature = [self.get_thumb_temperature(), self.get_index_temperature(), self.get_middle_temperature(), self.get_ring_temperature(), self.get_little_temperature()]
-        cmd_temperature = self.joint_state_to_cmd_state(list=joint_temperature)
+        cmd_temperature = self.joint_state_to_cmd_state(state=joint_temperature)
         return cmd_temperature
 
 
     def get_fault(self):
         """API接口:获取手指故障代码"""
         joint_fault = [self.get_thumb_fault(), self.get_index_fault(), self.get_middle_fault(), self.get_ring_fault(), self.get_little_fault()]
-        cmd_fault = self.joint_state_to_cmd_state(list=joint_fault)
+        cmd_fault = self.joint_state_to_cmd_state(state=joint_fault)
         return cmd_fault
 
     def clear_faults(self):
         """API接口:清除手指故障代码"""
-        pass
+        self.clear_finger_faults(finger_mask=[1, 1, 1, 1, 1])
 
     def cmd_range_to_joint_range(self,cmd_list):
         """根据手指映射关系，将手指控制命令列表转换为手指分组数据形式"""
@@ -956,36 +1186,56 @@ class LinkerHandG20Can:
             result.append(finger_data)
         
         return result
+    
 
-    def joint_state_to_cmd_state(self,list):
+    def joint_state_to_cmd_state(self, state):
         """
-        将手指序列状态列表转换为控制命令序列状态列表
+        将关节状态转换为命令状态
+        :param state: list2 格式的数据，5×6 的二维列表
+        :return: list1 格式的 20 维列表
         """
-        original = [""] * 20
-        try:        
-            for i, finger_data in enumerate(list):
-                # 基本位置映射
-                original[i] = finger_data[2]        # 根部
-                original[i + 5] = finger_data[0]    # 侧摆
-                original[i + 15] = finger_data[5]   # 末端
-                
-                # 特殊位置处理
-                if i == 0:  # 拇指
-                    original[10] = finger_data[1]   # 横摆
-                    original[11] = finger_data[3]   # 预留
-                    original[12] = finger_data[4]   # 预留
-                else:  # 其他手指
-                    original[10 + i] = finger_data[1]  # 预留位置
-                    if i <= 2:  # 食指、中指
-                        original[12 + i] = finger_data[3]  # 预留
-                        original[13 + i] = finger_data[4]  # 预留
-                    else:  # 无名指、小指
-                        original[11 + i] = finger_data[3]  # 预留
-                        original[12 + i] = finger_data[4]  # 预留
-            
-            return original
-        except:
-            return [-1] * 20
+        # 初始化结果列表，20个位置，预留位默认为0
+        result = [0] * 20
+        
+        # list1 索引映射:
+        # 0:拇指根部, 1:食指根部, 2:中指根部, 3:无名指根部, 4:小指根部
+        # 5:拇指侧摆, 6:食指侧摆, 7:中指侧摆, 8:无名指侧摆, 9:小指侧摆
+        # 10:拇指横摆, 11-14:预留, 15:拇指尖部, 16:食指末端, 17:中指末端, 18:无名指末端, 19:小指末端
+        
+        # list2 每行结构: [侧摆/横摆, 0, 根部, 0, 0, 末端/尖部]
+        # 拇指行: [横摆, 侧摆, 根部, 0, 0, 尖部] — 注意拇指特殊，第1列是横摆，第2列是侧摆
+        # 其他指: [侧摆, 0, 根部, 0, 0, 末端]
+        
+        # 拇指 (第0行) — 特殊处理
+        result[10] = state[0][0]   # 拇指横摆
+        result[5] = state[0][1]    # 拇指侧摆
+        result[0] = state[0][2]    # 拇指根部
+        result[15] = state[0][5]   # 拇指尖部
+        
+        # 食指 (第1行)
+        result[6] = state[1][0]    # 食指侧摆
+        result[1] = state[1][2]    # 食指根部
+        result[16] = state[1][5]   # 食指末端
+        
+        # 中指 (第2行)
+        result[7] = state[2][0]    # 中指侧摆
+        result[2] = state[2][2]    # 中指根部
+        result[17] = state[2][5]   # 中指末端
+        
+        # 无名指 (第3行)
+        result[8] = state[3][0]    # 无名指侧摆
+        result[3] = state[3][2]    # 无名指根部
+        result[18] = state[3][5]   # 无名指末端
+        
+        # 小指 (第4行)
+        result[9] = state[4][0]    # 小指侧摆
+        result[4] = state[4][2]    # 小指根部
+        result[19] = state[4][5]   # 小指末端
+        
+        # 预留位 11-14 保持为 0
+        
+        return result
+
 
     def _list_d_value(self, list1, list2):
         """检查两个列表的值是否有显著差异"""

@@ -315,7 +315,8 @@ class HandApiManager(QObject):
                     "ring_matrix": ring_data,
                     "little_matrix": little_data
                 }
-                
+                # 打印矩阵传感器数据
+                # print(f"矩阵数据: {matrix_data}", flush=True)
                 # 发送矩阵数据更新信号
                 self.matrix_data_updated.emit(matrix_data)
                 
@@ -336,7 +337,11 @@ class HandApiManager(QObject):
         if not self.api:
             self.status_updated.emit("error", "手部API未初始化")
             return
-            
+        # 打印state当前位置
+        # print(f"当前关节位置: {self.api.get_state()}", flush=True)
+        # 打印当前speed和torque
+        # print(f"当前速度: {self.api.get_speed()}", flush=True)
+        # print(f"当前扭矩: {self.api.get_torque()}", flush=True)
         try:
             self.lock = True
             # 调用API发送关节位置
