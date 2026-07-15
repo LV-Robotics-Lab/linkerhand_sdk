@@ -41,7 +41,7 @@ $ pip3 install -r requirements.txt
 ```bash
 # Open the CAN port
 $ sudo /usr/sbin/ip link set can0 up type can bitrate 1000000 # USB-to-CAN device blue light stays solid. This step can be skipped on Ubuntu systems after modifying setting.ymal as required.
-$ cd examples/gui_control
+$ cd example/gui_control
 $ sudo chmod a+x gui_control.py
 $ python3 gui_control.py
 ```
