@@ -65,5 +65,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # python3 linker_hand_o6.py --hand_joint O6 --hand_type left --can can0
+    # Ubuntu python3 linker_hand_o6.py --hand_joint O6 --hand_type left --can can0
+    
+    # WIN 
+    # pip install pyyaml numpy
+    # python linker_hand_o6.py --hand_joint O6 --hand_type left --can PCAN_USBBUS1
     main()
