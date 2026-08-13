@@ -1,11 +1,11 @@
-VERSION: 3.1.1 # 支持O6、L6在RS485模式
+VERSION: 3.1.1 # 上游 3.1.1；实验室双 L6 的 CAN 与手型配置
 LINKER_HAND:  # 手部配置信息
   LEFT_HAND:
-    EXISTS: False # 是否存在左手
+    EXISTS: True # 是否存在左手
     TOUCH: True # 是否有压力传感器
     CAN: "can0"  # 配置 CAN 端口，默认值为 can0。如果 MODBUS 不为 "None"，则 CAN 配置不生效。如果是 Windows 系统，则类似于 PCAN_USBBUS1。注：蓝色盒子在 Linux 下对应 can0，在 Windows 下对应 PCAN_USBBUS1；透明盒子在 Linux 下对应 can0，在 Windows 下对应 0。
     MODBUS: "None" # 通讯协议是否为485 默认None 如果启动485，则是设备端口 /dev/ttyUSB* CAN配置失效 当前只支持O6/L6.后续版本正在努力增加中
-    JOINT: O6 # 左手型号 O6/L6/L7/L10/L20/G20/L21/L25/
+    JOINT: L6 # 左手型号 O6/L6/L7/L10/L20/G20/L21/L25/
     NAME: # 默认值，不用修改
       - joint41
       - joint42
@@ -31,7 +31,7 @@ LINKER_HAND:  # 手部配置信息
   RIGHT_HAND:
     EXISTS: True # 是否存在右手
     TOUCH: True # 是否有压力传感器
-    CAN: "can0"  # 配置 CAN 端口，默认值为 can0。如果 MODBUS 不为 "None"，则 CAN 配置不生效。如果是 Windows 系统，则类似于 PCAN_USBBUS1。注：蓝色盒子在 Linux 下对应 can0，在 Windows 下对应 PCAN_USBBUS1；透明盒子在 Linux 下对应 can0，在 Windows 下对应 0。
+    CAN: "can1"  # 配置 CAN 端口，默认值为 can0。如果 MODBUS 不为 "None"，则 CAN 配置不生效。如果是 Windows 系统，则类似于 PCAN_USBBUS1。注：蓝色盒子在 Linux 下对应 can0，在 Windows 下对应 PCAN_USBBUS1；透明盒子在 Linux 下对应 can0，在 Windows 下对应 0。
     MODBUS: "None" # 通讯协议是否为485 默认None 如果启动485，则是设备端口 /dev/ttyUSB* CAN配置失效 当前只支持O6/L6.后续版本正在努力增加中
     JOINT: L6 # 右手型号 O6/L6/L7/L10/L20/G20/L21/L25/
     NAME:  # 默认值，不用修改
