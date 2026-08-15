@@ -55,4 +55,4 @@ LINKER_HAND:  # 手部配置信息
       - joint88
       - joint89
       - joint90
-PASSWORD: "12345678" # 由于与can通讯，需要激活通讯接口用到系统管理员密码。只有Linux系统需要，windows系统不需要。RS485不需要修改，RS485需要给/dev/ttyUSB* 777权限
+PASSWORD: "" # 已废弃：不得在 Git 中保存 sudo 密码。优先由操作员手动启用 CAN；如需 SDK 自动启用，使用 LINKERHAND_SUDO_PASSWORD 环境变量。

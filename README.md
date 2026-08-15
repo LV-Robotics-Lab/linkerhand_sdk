@@ -1,8 +1,11 @@
-# linkerhand_sdk
+# linkerhand_wrapper
 
-Local working copy of the [Linker Hand Python SDK](https://github.com/linker-bot/linkerhand-python-sdk)
+LV Robotics Lab's hardware wrapper around the
+[Linker Hand Python SDK](https://github.com/linker-bot/linkerhand-python-sdk),
 configured for a **dual Linker Hand L6** setup (one left + one right) controlled
-over two PEAK PCAN-USB adapters.
+over two PEAK PCAN-USB adapters. The repository name describes the lab-owned
+hardware boundary; the upstream-compatible `LinkerHand` and `linker_hand_l6`
+Python imports remain unchanged.
 
 The upstream SDK source is synchronized to **3.1.1** at commit
 [`0cc0585`](https://github.com/linker-bot/linkerhand-python-sdk/commit/0cc0585b97214b2cc4a9a5afcc84aee9f414e0e8).
@@ -57,9 +60,11 @@ sudo ip link set can1 up type can bitrate 1000000
 ip -br link show type can   # both should show UP
 ```
 
-The SDK can also auto-open CAN if you set your sudo password in
-`LinkerHand/config/setting.yaml` under the `PASSWORD:` field — handled for you
-in this workspace already.
+The tracked `PASSWORD` field in `LinkerHand/config/setting.yaml` is deliberately
+empty. Never commit a sudo password. Prefer bringing CAN up explicitly with the
+commands above. Existing SDK callers that require auto-open may opt in for one
+process with `LINKERHAND_SUDO_PASSWORD`; do not save it in shell profiles,
+dotenv files, logs, or repository configuration.
 
 ## Identify which hand is on which port
 

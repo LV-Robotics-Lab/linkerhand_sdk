@@ -20,7 +20,23 @@ import os
 class OpenCan:
     def __init__(self,load_yaml=None):
         self.yaml = LoadWriteYaml()
-        self.password = self.yaml.load_setting_yaml()["PASSWORD"]
+        # Never read a sudo password from the tracked hardware profile.  The
+        # preferred contract is for an operator to bring the CAN interface up
+        # explicitly.  The environment variable is an opt-in compatibility
+        # path for existing SDK callers and is intentionally absent by default.
+        self.password = os.environ.get("LINKERHAND_SUDO_PASSWORD", "")
+
+    def _sudo_input(self):
+        if self.password:
+            return f"{self.password}\n"
+        ColorMsg(
+            msg=(
+                "CAN interface is down. Bring it up manually with sudo ip link, "
+                "or explicitly set LINKERHAND_SUDO_PASSWORD for SDK auto-open."
+            ),
+            color="yellow",
+        )
+        return None
 
     def open_can0(self):
         try:
@@ -34,9 +50,12 @@ class OpenCan:
             if "state UP" in result.stdout:
                 return 
             # 如果没有处于 UP 状态，则配置接口
+            sudo_input = self._sudo_input()
+            if sudo_input is None:
+                return False
             subprocess.run(
                 ["sudo", "-S", "ip", "link", "set", "can0", "up", "type", "can", "bitrate", "1000000"],
-                input=f"{self.password}\n",
+                input=sudo_input,
                 check=True,
                 text=True,
                 capture_output=True
@@ -58,9 +77,12 @@ class OpenCan:
             if "state UP" in result.stdout:
                 return 
             # 如果没有处于 UP 状态，则配置接口
+            sudo_input = self._sudo_input()
+            if sudo_input is None:
+                return False
             subprocess.run(
                 ["sudo", "-S", "ip", "link", "set", can, "up", "type", "can", "bitrate", "1000000"],
-                input=f"{self.password}\n",
+                input=sudo_input,
                 check=True,
                 text=True,
                 capture_output=True
@@ -84,7 +106,7 @@ class OpenCan:
         except Exception as e:
             print(f"Error reading CAN interface state: {e}")
             return False
-        
+
     def close_can0(self):
         try:
             # 检查 can0 接口是否存在
@@ -97,9 +119,12 @@ class OpenCan:
             
             # 如果接口存在且处于 UP 状态，则关闭它
             if "state UP" in result.stdout:
+                sudo_input = self._sudo_input()
+                if sudo_input is None:
+                    return False
                 subprocess.run(
                     ["sudo", "-S", "ip", "link", "set", "can0", "down"],
-                    input=f"{self.password}\n",
+                    input=sudo_input,
                     check=True,
                     text=True,
                     capture_output=True
@@ -113,7 +138,7 @@ class OpenCan:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return False
-    
+
     def close_can(self,can="can0"):
         try:
             # 检查 can0 接口是否存在
@@ -126,9 +151,12 @@ class OpenCan:
             
             # 如果接口存在且处于 UP 状态，则关闭它
             if "state UP" in result.stdout:
+                sudo_input = self._sudo_input()
+                if sudo_input is None:
+                    return False
                 subprocess.run(
                     ["sudo", "-S", "ip", "link", "set", can, "down"],
-                    input=f"{self.password}\n",
+                    input=sudo_input,
                     check=True,
                     text=True,
                     capture_output=True
@@ -142,4 +170,3 @@ class OpenCan:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return False
-    
