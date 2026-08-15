@@ -24,6 +24,13 @@ class RepositoryContractTest(unittest.TestCase):
         self.assertTrue((ROOT / "LinkerHand/__init__.py").is_file())
         self.assertTrue((ROOT / "linker_hand_l6.py").is_file())
 
+    def test_public_readme_excludes_device_specific_inventory(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIsNone(re.search(r"LHL6-[0-9]+", readme))
+        self.assertNotIn("Known issues " + "on this pair", readme)
+        self.assertNotIn("stuck at " + "state", readme)
+        self.assertEqual(readme.count("Local inventory / not tracked"), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

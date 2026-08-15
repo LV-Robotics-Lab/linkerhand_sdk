@@ -23,8 +23,8 @@ lives in `LinkerHand/` and the upstream examples in `example/`.
 
 | Side  | SocketCAN | Serial | Firmware |
 |-------|-----------|--------|----------|
-| Left  | `can0`    | `LHL6-03-253-L-B-1-C` | 2.3.7 |
-| Right | `can1`    | `LHL6-03-240-R-B-1-C` | 2.3.7 |
+| Left  | `can0`    | Local inventory / not tracked | Verify on host |
+| Right | `can1`    | Local inventory / not tracked | Verify on host |
 
 - 2× PEAK PCAN-USB adapters (`lsusb: 0c72:000c`)
 - XT30 (2+2) connector per hand: `VCC / GND / CAN_H / CAN_L`
@@ -151,13 +151,13 @@ QT_QPA_PLATFORM=wayland python dual_gui.py
 
 ---
 
-## Known issues on this pair
+## Field diagnostics
 
-- **Right hand index finger stuck at state ≈ 180.** The motor draws elevated
-  current (~80 vs <25 on the others) when commanded but the finger doesn't
-  track. Likely mechanical obstruction inside the joint; see `diagnose.py`
-  output for the signature. Contact `support@linkerbot.cn` with the serial
-  if it doesn't free up on inspection.
+Pair-specific serial numbers, firmware inventory, and fault observations belong
+in the local field log, not in this public repository. Start with read-only
+state, current, temperature, and fault inspection using `diagnose.py`; authorize
+motion only after the device mapping, limits, stop path, and operator are
+confirmed. Record any device-specific finding outside Git.
 
 ---
 
